@@ -32,21 +32,4 @@ A simple URL shortener API built with **Node.js** and **Express**, using **Mongo
 ### Prerequisites
 Make sure you have [Node.js](https://nodejs.org/) and [MongoDB](https://www.mongodb.com/) installed.
 
-### Steps
-1. Clone the repository to your local machine:
-   ```bash
-   git clone https://github.com/kartiktoogoated/url-shortner.git
-```bash
-   cd url-shortner
-2. Install dependencies:
-```bash
-    npm install
-3. Create a .env file in the root of the project with the following content:
-```bash
-    PORT=3000
-    MONGO_URI=mongodb://localhost:27017/url-shortener
-4. Run the server:
-```bash
-    npm start
-
 
