@@ -3,7 +3,8 @@ import bodyParser from 'body-parser';
 import mongoose from 'mongoose';
 import { nanoid } from 'nanoid';
 import dotenv from 'dotenv';
-import Url from './models/url.js';  // Import the Url model
+import Url from './models/url.js';  
+import isURL from 'validator/lib/isURL.js';
 
 dotenv.config();
 
@@ -62,6 +63,30 @@ app.get('/api/:shortUrl', async (req, res) => {
     }
 });
 
+app.put('/api/:shortUrl', async (req, res) => {
+    const { shortUrl } = req.params;
+    const { originalUrl } = req.body;
+
+    if (!originalUrl || !isURL(originalUrl)) {
+        return res.status(400).json({ error: 'Invalid URL provided. Please provide a valid URL.' });
+    }
+
+    try {
+        const updatedUrl = await Url.findOneAndUpdate(
+            { shortUrl },
+            { originalUrl, updatedAt: new Date() },
+            { new: true } 
+        );
+
+        if (!updatedUrl) {
+            return res.status(404).json({ error: 'Short URL not found.' });
+        }
+
+        res.status(200).json({ message: 'URL updated successfully.', updatedUrl });
+    } catch (err) {
+        res.status(500).json({ error: 'An error occurred while updating the URL.', details: err.message });
+    }
+});
 
 app.listen(PORT, () => {
     console.log('Server Running');
