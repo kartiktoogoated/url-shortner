@@ -58,7 +58,7 @@ app.get('/api/:shortUrl', async (req, res) => {
         if (!url) {
             return res.status(404).json({ error: 'Short URL not found' });
         }
-        
+
         res.status(200).json({ originalUrl: url.originalUrl });
     } catch (err) {
         res.status(500).json({ error: 'Error retrieving the original URL', details: err.message });
@@ -87,6 +87,43 @@ app.put('/api/:shortUrl', async (req, res) => {
         res.status(200).json({ message: 'URL updated successfully.', updatedUrl });
     } catch (err) {
         res.status(500).json({ error: 'An error occurred while updating the URL.', details: err.message });
+    }
+});
+
+app.put('/api/shorten/:shortUrl', async (req, res) => {
+    const { shortUrl } = req.params;
+    const { url: updatedUrl } = req.body; 
+
+    const isValidUrl = isURL(updatedUrl, {
+        require_protocol: true,
+        require_valid_protocol: true,
+        protocols: ['http', 'https'],
+        host_whitelist: [/\.com$/, /\.org$/, /\.net$/], 
+    });
+
+    if (!updatedUrl || !isValidUrl) {
+        return res.status(400).json({ error: 'Invalid URL. Only .com, .org, .net domains are allowed.' });
+    }
+
+    try {
+        const existingUrl = await Url.findOne({ shortUrl });
+        if (!existingUrl) {
+            return res.status(404).json({ error: 'Short URL not found.' });
+        }
+
+        existingUrl.originalUrl = updatedUrl;
+        existingUrl.updatedAt = new Date(); 
+        await existingUrl.save();
+
+        res.status(200).json({
+            id: existingUrl._id,
+            url: existingUrl.originalUrl,
+            shortCode: existingUrl.shortUrl,
+            createdAt: existingUrl.createdAt,
+            updatedAt: existingUrl.updatedAt,
+        });
+    } catch (err) {
+        res.status(500).json({ error: 'Error updating short URL', details: err.message });
     }
 });
 
