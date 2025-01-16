@@ -28,21 +28,24 @@ const isValidUrl = (url) => {
 app.post('/api/shorten', async (req, res) => {
     const { originalUrl } = req.body;
 
-    if (!originalUrl) {
-        return res.status(400).json({ error: 'Original Url is required' });
-    }
+    const isValidUrl = isURL(originalUrl, {
+        require_protocol: true,
+        require_valid_protocol: true,
+        protocols: ['http', 'https'],
+        host_whitelist: [/\.com$/, /\.org$/, /\.net$/], 
+    });
 
-    if (!isValidUrl(originalUrl)) {
-        return res.status(400).json({ error: 'Invalid URL format' });
+    if (!originalUrl || !isValidUrl) {
+        return res.status(400).json({ error: 'Invalid URL. Only .com, .org, .net domains are allowed.' });
     }
 
     try {
         const shortUrl = nanoid(8);
         const newUrl = new Url({ originalUrl, shortUrl });
         await newUrl.save();
-        res.status(201).json(newUrl);  // Respond with the shortened URL and the original URL
+        res.status(201).json(newUrl);
     } catch (err) {
-        res.status(500).json({ error: 'Error catching short URL', details: err.message });
+        res.status(500).json({ error: 'Error creating short URL', details: err.message });
     }
 });
 
@@ -55,8 +58,7 @@ app.get('/api/:shortUrl', async (req, res) => {
         if (!url) {
             return res.status(404).json({ error: 'Short URL not found' });
         }
-
-        // Return the original URL
+        
         res.status(200).json({ originalUrl: url.originalUrl });
     } catch (err) {
         res.status(500).json({ error: 'Error retrieving the original URL', details: err.message });
