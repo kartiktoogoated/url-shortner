@@ -1,5 +1,3 @@
-# Url-Shortner
-
 # URL Shortener
 
 A simple URL shortener API built with **Node.js** and **Express**, using **MongoDB** for storing URLs. This project allows users to shorten URLs, retrieve the original URL from a short code, update existing short URLs, delete them, and view URL statistics such as access count.
