@@ -1,0 +1,120 @@
+openapi: 3.0.0
+info:
+  title: URL Shortening API
+  description: A simple API for URL shortening with tracking and statistics.
+  version: "1.0.0"
+servers:
+  - url: 'http://localhost:5000/api'  # Change this to your actual host
+    description: Local server
+tags:
+  - name: "Shorten URL"
+    description: "Operations related to shortening URLs."
+  - name: "Statistics"
+    description: "Operations for fetching URL statistics."
+paths:
+  /shorten:
+    post:
+      tags:
+        - "Shorten URL"
+      summary: "Shorten a long URL"
+      description: "Creates a short URL from the provided original URL."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                originalUrl:
+                  type: string
+                  example: "https://www.example.com"
+      responses:
+        '201':
+          description: "Short URL created successfully"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shortUrl:
+                    type: string
+                  originalUrl:
+                    type: string
+                  createdAt:
+                    type: string
+        '400':
+          description: "Invalid input"
+        '500':
+          description: "Internal server error"
+          
+  /{shortUrl}:
+    get:
+      tags:
+        - "Shorten URL"
+      summary: "Redirect to the original URL"
+      description: "Redirects to the original URL associated with the short URL."
+      parameters:
+        - name: shortUrl
+          in: path
+          required: true
+          description: "The short URL to redirect to."
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Successfully redirected"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  originalUrl:
+                    type: string
+        '404':
+          description: "Short URL not found"
+        '500':
+          description: "Internal server error"
+          
+  /{shortUrl}/stats:
+    get:
+      tags:
+        - "Statistics"
+      summary: "Fetch stats for a short URL"
+      description: "Returns statistics such as click count, referrers, and geo locations."
+      parameters:
+        - name: shortUrl
+          in: path
+          required: true
+          description: "The short URL to get statistics for."
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Stats retrieved successfully"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shortUrl:
+                    type: string
+                  originalUrl:
+                    type: string
+                  clickCount:
+                    type: integer
+                  referrers:
+                    type: object
+                    additionalProperties:
+                      type: integer
+                  geoLocations:
+                    type: object
+                    additionalProperties:
+                      type: integer
+                  accessTimestamps:
+                    type: array
+                    items:
+                      type: string
+        '404':
+          description: "Short URL not found"
+        '500':
+          description: "Internal server error"
