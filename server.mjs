@@ -5,26 +5,30 @@ import { nanoid } from 'nanoid';
 import dotenv from 'dotenv';
 import Url from './models/url.js';  
 import isURL from 'validator/lib/isURL.js';
+import swaggerUi from 'swagger-ui-express';
+import path from 'path';
+import YAML from 'yamljs';
+import { fileURLToPath } from 'url';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT;
 
+const __filename = fileURLToPath(import.meta.url); 
+const __dirname = path.dirname(__filename); 
+const swaggerDocument = YAML.load(path.join(__dirname, 'swagger.yaml'));
 app.use(bodyParser.json());
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-});
-const isValidUrl = (url) => {
-    try {
-        new URL(url);
-        return true;
-    } catch (_) {
-        return false;
-    }
-};
+mongoose.connect(process.env.MONGO_URI)
+    .then(() => {
+        console.log('Connected to MongoDB');
+    })
+    .catch((err) => {
+        console.error('Error connecting to MongoDB:', err);
+    });
+
 
 const getStatsByShortUrl = async (shortUrl) => {
     const url = await Url.findOne({ shortUrl });
@@ -43,12 +47,10 @@ const getStatsByShortUrl = async (shortUrl) => {
 app.post('/api/shorten', async (req, res) => {
     const { originalUrl } = req.body;
 
-    // Check if `originalUrl` is provided and is a string
     if (!originalUrl || typeof originalUrl !== 'string') {
         return res.status(400).json({ error: 'Invalid input: URL must be provided as a string.' });
     }
 
-    // Validate the URL format
     const isValidUrl = isURL(originalUrl, {
         require_protocol: true,
         require_valid_protocol: true,
@@ -70,7 +72,6 @@ app.post('/api/shorten', async (req, res) => {
     }
 });
 
-
 app.get('/api/:shortUrl', async (req, res) => {
     const { shortUrl } = req.params;
 
@@ -81,9 +82,8 @@ app.get('/api/:shortUrl', async (req, res) => {
             return res.status(404).json({ error: 'Short URL not found' });
         }
 
-        // Update statistics
         const referrer = req.get('Referrer') || 'unknown';
-        const geoLocation = req.ip || 'unknown'; // Use a geo-location service for better accuracy
+        const geoLocation = req.ip || 'unknown';
         url.clickCount += 1;
         url.referrers.set(referrer, (url.referrers.get(referrer) || 0) + 1);
         url.geoLocations.set(geoLocation, (url.geoLocations.get(geoLocation) || 0) + 1);
@@ -161,7 +161,7 @@ app.put('/api/shorten/:shortUrl', async (req, res) => {
 app.get('/api/url/:shortUrl/stats', async (req, res) => {
     const { shortUrl } = req.params;
     try {
-      const stats = await getStatsByShortUrl(shortUrl); // Implement this function
+      const stats = await getStatsByShortUrl(shortUrl);
       if (!stats) {
         return res.status(404).json({ error: 'Short URL not found' });
       }
@@ -170,8 +170,7 @@ app.get('/api/url/:shortUrl/stats', async (req, res) => {
       console.error(error);
       res.status(500).json({ error: 'Internal Server Error' });
     }
-  });
-  
+});
 
 app.listen(PORT, () => {
     console.log('Server Running');
