@@ -25,17 +25,38 @@ const isValidUrl = (url) => {
         return false;
     }
 };
+
+const getStatsByShortUrl = async (shortUrl) => {
+    const url = await Url.findOne({ shortUrl });
+    if (!url) return null;
+
+    return {
+        shortUrl: url.shortUrl,
+        originalUrl: url.originalUrl,
+        clickCount: url.clickCount,
+        referrers: Object.fromEntries(url.referrers),
+        geoLocations: Object.fromEntries(url.geoLocations),
+        accessTimestamps: url.accessTimestamps,
+    };
+};
+
 app.post('/api/shorten', async (req, res) => {
     const { originalUrl } = req.body;
 
+    // Check if `originalUrl` is provided and is a string
+    if (!originalUrl || typeof originalUrl !== 'string') {
+        return res.status(400).json({ error: 'Invalid input: URL must be provided as a string.' });
+    }
+
+    // Validate the URL format
     const isValidUrl = isURL(originalUrl, {
         require_protocol: true,
         require_valid_protocol: true,
         protocols: ['http', 'https'],
-        host_whitelist: [/\.com$/, /\.org$/, /\.net$/], 
+        host_whitelist: [/\.com$/, /\.org$/, /\.net$/],
     });
 
-    if (!originalUrl || !isValidUrl) {
+    if (!isValidUrl) {
         return res.status(400).json({ error: 'Invalid URL. Only .com, .org, .net domains are allowed.' });
     }
 
@@ -49,6 +70,7 @@ app.post('/api/shorten', async (req, res) => {
     }
 });
 
+
 app.get('/api/:shortUrl', async (req, res) => {
     const { shortUrl } = req.params;
 
@@ -58,6 +80,15 @@ app.get('/api/:shortUrl', async (req, res) => {
         if (!url) {
             return res.status(404).json({ error: 'Short URL not found' });
         }
+
+        // Update statistics
+        const referrer = req.get('Referrer') || 'unknown';
+        const geoLocation = req.ip || 'unknown'; // Use a geo-location service for better accuracy
+        url.clickCount += 1;
+        url.referrers.set(referrer, (url.referrers.get(referrer) || 0) + 1);
+        url.geoLocations.set(geoLocation, (url.geoLocations.get(geoLocation) || 0) + 1);
+        url.accessTimestamps.push(new Date());
+        await url.save();
 
         res.status(200).json({ originalUrl: url.originalUrl });
     } catch (err) {
@@ -127,6 +158,22 @@ app.put('/api/shorten/:shortUrl', async (req, res) => {
     }
 });
 
+app.get('/api/url/:shortUrl/stats', async (req, res) => {
+    const { shortUrl } = req.params;
+    try {
+      const stats = await getStatsByShortUrl(shortUrl); // Implement this function
+      if (!stats) {
+        return res.status(404).json({ error: 'Short URL not found' });
+      }
+      res.json(stats);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+  
+
 app.listen(PORT, () => {
     console.log('Server Running');
 });
+export { getStatsByShortUrl };
