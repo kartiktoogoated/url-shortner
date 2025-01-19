@@ -25,9 +25,7 @@ A simple URL shortener API built with **Node.js** and **Express**, using **Mongo
 - **Nanoid**: For generating short URL codes.
 - **dotenv**: For managing environment variables.
 
-## Installation
-
-### Prerequisites
+https://roadmap.sh/projects/url-shortening-service
 Make sure you have [Node.js](https://nodejs.org/) and [MongoDB](https://www.mongodb.com/) installed.
 
 
